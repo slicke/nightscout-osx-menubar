@@ -14,7 +14,7 @@ VERSION = '0.3.3'
 APP_NAME = 'Nightscout Menubar'
 PROJECT_HOMEPAGE = 'https://github.com/mddub/nightscout-osx-menubar'
 
-SGVS_PATH = '/api/v1/entries/sgv.json?count={count}'
+SGVS_PATH = '/api/v1/entries/sgv.json?count={count}&token={token}'
 UPDATE_FREQUENCY_SECONDS = 20
 MAX_SECONDS_TO_SHOW_DELTA = 600
 HISTORY_LENGTH = 5
@@ -44,6 +44,7 @@ class NightscoutConfig(object):
     SECTION = 'NightscoutMenubar'
     HOST = 'nightscout_host'
     USE_MMOL = 'use_mmol'
+    TOKEN = 'token'
 
     def __init__(self, app_name):
         self.config_path = os.path.join(rumps.application_support(app_name), self.FILENAME)
@@ -55,12 +56,22 @@ class NightscoutConfig(object):
             self.set_host('')
         if not self.config.has_option(self.SECTION, self.USE_MMOL):
             self.set_use_mmol(False)
+        if not self.config.has_option(self.SECTION, self.TOKEN):
+            self.set_token('')
 
     def get_host(self):
         return self.config.get(self.SECTION, self.HOST)
 
     def set_host(self, host):
         self.config.set(self.SECTION, self.HOST, host)
+        with open(self.config_path, 'w') as f:
+            self.config.write(f)
+
+    def get_token(self):
+        return self.config.get(self.SECTION, self.TOKEN)
+
+    def set_token(self, token):
+        self.config.set(self.SECTION, self.TOKEN, token)
         with open(self.config_path, 'w') as f:
             self.config.write(f)
 
@@ -123,7 +134,7 @@ def get_entries(retries=0, last_exception=None):
 
     try:
         resp = requests.get(
-            config.get_host() + SGVS_PATH.format(count=(HISTORY_LENGTH + 1)),
+            config.get_host() + SGVS_PATH.format(count=(HISTORY_LENGTH + 1), token=config.get_token()),
             # For the sake of keeping this portable without adding a lot of complexity, don't verify SSL certificates.
             # https://github.com/kennethreitz/requests/issues/557
             verify=False,
@@ -222,15 +233,20 @@ def update_data(sender):
 def configuration_window(sender):
     window = rumps.Window(
         title='Nightscout Menubar Configuration',
-        message='Enter your nightscout URL below.\n\nIt probably looks like:\nhttps://SOMETHING.azurewebsites.net',
+        message='Enter your nightscout URL below.\n\nIt probably looks like:\nhttps://SOMETHING.azurewebsites.net\nURL may or may not end with ?token=xx.',
         dimensions=(320, 22),
     )
-    window.default_text = config.get_host()
+    window.default_text = config.get_host() + "?token=" + config.get_token()
     window.add_buttons('Cancel')
 
     response = window.run()
     if response.clicked == 1:
-        config.set_host(response.text.strip())
+        if response.text.strip().find("token") == -1:
+            config.set_host(response.text.strip())
+        else:
+            nshost,nstoken = response.text.strip().split("?token=")
+            config.set_host(nshost)
+            config.set_token(nstoken)
         update_data(None)
 
 def open_project_homepage(sender):
