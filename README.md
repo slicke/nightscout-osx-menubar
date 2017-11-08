@@ -1,15 +1,15 @@
-# nightscout-osx-menubar
+# ns-mac-menubar
 
-View CGM data from [Nightscout] in the OS X menu bar.
+Displays readings from [Nightscout] in the menu bar of macOS.
 
-**Latest version: 0.3.3**
+**Latest version: 1.0-beta**
 
 ![nightscout-osx-menubar screenshot](https://raw.githubusercontent.com/mddub/nightscout-osx-menubar/master/screenshot.png)
 
 ## Requirements
 
-* OS X (tested with 10.8 and 10.10, may work with earlier versions)
-* A working installation of Nightscout ([cgm-remote-monitor])
+* macOS (developed under High Sierra, but should work with 10.8 and later)
+* A working Nightscout setup ([cgm-remote-monitor])
 
 ## Installation
 
